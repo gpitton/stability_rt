@@ -4,10 +4,18 @@
 
 constexpr double pi = 3.141592653589793238463;
 
+
 enum parity { Even, Odd };
 
 
-class Trig3 {
+class BasisFunction {
+ public:
+    virtual double operator()(const double) = 0;
+    virtual double deriv(int, const double) = 0;
+};
+
+
+class Trig3 : public BasisFunction {
  public:
     Trig3(int);
     double operator()(const double);
@@ -17,5 +25,6 @@ class Trig3 {
     parity   t;
     double   an, bn;
 };
+
 
 #endif
