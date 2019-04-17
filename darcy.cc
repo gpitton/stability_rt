@@ -15,6 +15,7 @@ Darcy<T, N>::Darcy(double s,
     Ch = Cahn;
     k = mode_k;
     l = mode_l;
+    eps = std::sqrt(Ch);
 }
 
 
