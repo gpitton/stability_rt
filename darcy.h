@@ -13,6 +13,8 @@ class Darcy {
     void assemble_matrix();
     void solve_eigenproblem();
     inline void recompute_constants() { C = 3.*std::sqrt(2.)/4./Bo; };
+    inline void set_biot(const double biot) { Bo = biot; };
+    inline void set_peclet(const double peclet) { Pe = peclet; };
  private:
     void build_pressure_pressure_block();
     void build_pressure_phase_block();

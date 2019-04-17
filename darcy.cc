@@ -4,15 +4,15 @@
 // mode_l is initialized to zero by default: see constructor declaration
 template<class T, int N>
 Darcy<T, N>::Darcy(double s,
-                   double Biot,
-                   double Peclet,
-                   double Cahn,
+                   double biot,
+                   double peclet,
+                   double cahn,
                    double mode_k,
                    double mode_l) {
     sign = s;
-    Bo = Biot;
-    Pe = Peclet;
-    Ch = Cahn;
+    Bo = biot;
+    Pe = peclet;
+    Ch = cahn;
     k = mode_k;
     l = mode_l;
     eps = std::sqrt(Ch);
