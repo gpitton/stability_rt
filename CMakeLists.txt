@@ -3,4 +3,5 @@ project ("stability")
 add_executable(stability stability.cc
                          utils.cc
                          basis.cc
+                         darcy.cc
                          )
