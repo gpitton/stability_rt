@@ -1,6 +1,7 @@
 #ifndef DARCY_HEADER
 #define DARCY_HEADER
 #include <cmath>
+#include <functional>
 #include <Eigen/Dense>
 #include <boost/math/quadrature/gauss_kronrod.hpp>
 #include "basis.h"
@@ -35,6 +36,10 @@ class Darcy {
     // choice of basis functions for the perturbation expansions
     // Li is understood to be the test function, Lj to be the trial function
     T         Li, Lj;
+    // shape of phase field in the initial configuration
+    Phi_0     phi_0;
+    // chemical potential
+    Eta       eta;
     // A and B are respectively the lhs and the rhs for the generalized eigenvalue problem
     Eigen::Matrix<double, N + Np, N + Np> A, B;
     // parameter-dependent blocks of A, which are computed independently to speed-up families of parameter-dependent computations
