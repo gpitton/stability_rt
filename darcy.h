@@ -113,11 +113,12 @@ void Darcy<T, N>::assemble_matrix() {
     // squared modulus of the component orthogonal to the gravity of the wavevector
     double kort = std::pow(k, 2) + std::pow(l, 2);
 
-    A.block<Np, Np>(0, 0) = A1_M;
-    //A.block<Np, Np>(0, 0) = kort*A1_M - A1_D;
-    //A.block<Np, N>(0, Np) = sign/2.*A2_sgn + C/eps*A2_C;
-    //A.block<N, Np>(Np, 0) = A3;
-    //A.block<N, N>(Np, Np) = -sign/2.*A4_sgn - C/eps*A4_C + 1./Pe*(- kort*A4_Pexx + A4_Peyy);
+    // from Eigen's documentation:
+    // since block is a templated member, the keyword template has to be used if the matrix type is also a template paramete
+    A.template block<Np, Np>(0, 0) = kort*A1_M - A1_D;
+    A.template block<Np, N>(0, Np) = sign/2.*A2_sgn + C/eps*A2_C;
+    A.template block<N, Np>(Np, 0) = A3;
+    A.template block<N, N>(Np, Np) = -sign/2.*A4_sgn - C/eps*A4_C + 1./Pe*(- kort*A4_Pexx + A4_Peyy);
 }
 
 
