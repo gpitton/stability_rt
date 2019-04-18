@@ -1,6 +1,7 @@
 #ifndef DARCY_HEADER
 #define DARCY_HEADER
 #include <cmath>
+#include <Eigen/Dense>
 #include "basis.h"
 #include "utils.h"
 
@@ -29,9 +30,23 @@ class Darcy {
               l,      // z-component of perturbation wavevector (= 0 for 2d problems)
               eps;    // = sqrt(Ch), interface width parameter
     double    C;      // constant appearing in the term eta*grad(phi) in the momentum equation
+    static constexpr int Np = N - 2;    // number of pressure modes
     // choice of basis functions for the perturbation expansions
     // Li is understood to be the test function, Lj to be the trial function
     T         Li, Lj;
+    // A and B are respectively the lhs and the rhs for the generalized eigenvalue problem
+    Eigen::Matrix<double, N + Np, N + Np> A, B;
+    // parameter-dependent blocks of A, which are computed independently to speed-up families of parameter-dependent computations
+    Eigen::Matrix<double, Np, Np>  A1_M,
+                                   A1_D;
+    Eigen::Matrix<double, Np, N>   A2_sgn,
+                                   A2_C;
+    Eigen::Matrix<double, N, Np>   A3;
+    Eigen::Matrix<double, N, N>    A4_sgn,
+                                   A4_C,
+                                   A4_Pexx,
+                                   A4_Peyy,
+                                   M;
 };
 
 #endif

@@ -57,5 +57,9 @@ void Darcy<T, N>::build_phase_phase_block() {
 
 template<class T, int N>
 void Darcy<T, N>::precompute_matrices() {
-    
+    build_pressure_pressure_block();
+    build_pressure_phase_block();
+    build_phase_pressure_block();
+    build_phase_phase_block();
+    // fill B here B_ij = (Li, Lj)
 }
