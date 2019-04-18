@@ -12,8 +12,4 @@ find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 
-add_executable(stability stability.cc
-                         utils.cc
-                         basis.cc
-                         darcy.cc
-                         )
+add_executable(stability stability.cc)
