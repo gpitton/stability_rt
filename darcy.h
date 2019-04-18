@@ -3,11 +3,29 @@
 #include <cmath>
 #include <complex>
 #include <functional>
+#include <boost/math/quadrature/gauss_kronrod.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
-#include <boost/math/quadrature/gauss_kronrod.hpp>
+//#include <Spectra/GenEigsSolver.h>
 #include "basis.h"
 #include "utils.h"
+
+
+template<int R, int C>
+class SchurOperator
+{
+ public:
+    int rows() { return R; }
+    int cols() { return C; }
+    // y_out = M * x_in
+    void perform_op(const double *x_in, double *y_out)
+    {
+        for(int i = 0; i < rows(); ++i)
+            {
+                y_out[i] = x_in[i] * (i + 1);
+            }
+    }
+};
 
 
 // template parameters: basis function type, number of expansion modes
@@ -57,7 +75,11 @@ class Darcy {
                                    A4_Pexx,
                                    A4_Peyy,
                                    M;
+    SchurOperator<N, N> schur;
+    // solver for the generalized eigenvalue problem
     Eigen::GeneralizedEigenSolver<Eigen::Matrix<double, N + Np, N + Np>> ges;
+    // solver for the Schur complement eigenvalue problem
+    //Spectra::GenEigsSolver<double, Spectra::SMALLEST_REAL, SchurOperator<N, N>> ses;
 };
 
 
@@ -74,6 +96,7 @@ Darcy<T, N>::Darcy(double s,
     eta(std::sqrt(cahn), mode_k, mode_l),
     Li(1),
     Lj(1)
+//ses(&schur, 3, 6)   // will compute just three eigenvalues, the third parameter must be greater than 2*nev
 {
     sign = s;
     Bo = biot;
@@ -87,7 +110,14 @@ Darcy<T, N>::Darcy(double s,
 
 template<class T, int N>
 void Darcy<T, N>::assemble_matrix() {
-    
+    // squared modulus of the component orthogonal to the gravity of the wavevector
+    double kort = std::pow(k, 2) + std::pow(l, 2);
+
+    A.block<Np, Np>(0, 0) = A1_M;
+    //A.block<Np, Np>(0, 0) = kort*A1_M - A1_D;
+    //A.block<Np, N>(0, Np) = sign/2.*A2_sgn + C/eps*A2_C;
+    //A.block<N, Np>(Np, 0) = A3;
+    //A.block<N, N>(Np, Np) = -sign/2.*A4_sgn - C/eps*A4_C + 1./Pe*(- kort*A4_Pexx + A4_Peyy);
 }
 
 
