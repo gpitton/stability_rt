@@ -2,6 +2,7 @@
 #define DARCY_HEADER
 #include <cmath>
 #include <Eigen/Dense>
+#include <boost/math/quadrature/gauss_kronrod.hpp>
 #include "basis.h"
 #include "utils.h"
 

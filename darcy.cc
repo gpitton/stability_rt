@@ -1,5 +1,7 @@
 #include "darcy.h"
 
+using namespace boost::math::quadrature;
+
 
 // mode_l is initialized to zero by default: see constructor declaration
 template<class T, int N>
@@ -33,7 +35,15 @@ void Darcy<T, N>::solve_eigenproblem() {
 
 template<class T, int N>
 void Darcy<T, N>::build_pressure_pressure_block() {
-    
+    // pressure mass matrix: A1_M_{ij} = (Li, Lj)
+    for (int i = 0; i < Np; ++i)
+        A1_M(i, i) = 1.;
+    for (int i = 0; i < Np; ++i) {
+        Li = Trig3(i + 1);
+        for (int j = 0; j < Np; ++j) {
+            Lj = Trig3(j + 1);
+        }
+    }
 }
 
 
