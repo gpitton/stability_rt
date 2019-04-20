@@ -1,5 +1,6 @@
 #ifndef DARCY_HEADER
 #define DARCY_HEADER
+#include <iostream>
 #include <cmath>
 #include <complex>
 #include <functional>
@@ -39,8 +40,8 @@ class Darcy {
     inline void recompute_constants() { C = 3.*std::sqrt(2.)/4./Bo; };
     inline void set_biot(const double biot) { Bo = biot; };
     inline void set_peclet(const double peclet) { Pe = peclet; };
-    //Eigen::Array<std::complex, N + Np, 1>& get_eigenvalues();
-    std::complex<double>& get_maximum_eigenvalue();
+    Eigen::Array<std::complex<double>, N + (N - 2), 1>& get_eigenvalues();
+    //std::complex<double>& get_maximum_eigenvalue();
  private:
     void build_pressure_pressure_block();
     void build_pressure_phase_block();
@@ -118,6 +119,9 @@ Darcy<T, N>::Darcy(double s,
     k = mode_k;
     l = mode_l;
     eps = std::sqrt(Ch);
+
+    // initialize B to zero
+    B = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Zero(N + Np, N + Np);
 }
 
 
@@ -135,12 +139,7 @@ void Darcy<T, N>::assemble_matrix() {
 }
 
 
-template<class T, int
-
-
-
-
- N>
+template<class T, int N>
 void Darcy<T, N>::solve_eigenproblem() {
     ges.compute(A, B);
     w = ges.eigenvalues().transpose();
@@ -151,7 +150,10 @@ template<class T, int N>
 void Darcy<T, N>::build_pressure_pressure_block() {
     // pressure mass matrix: A1_M_{ij} = (Li, Lj)
     // this selects the sub-block of B of size <Np, Np>, starting at indices (Np-1, Np-1)
-    A1_M = B.template block<Np, Np>(Np - 1, Np - 1);
+    A1_M = B.template block<Np, Np>(Np, Np);
+    //std::cout << A1_M << std::endl;
+    //std::cout << B << std::endl;
+    #pragma omp parallel for
     for (int i = 0; i < Np; ++i) {
         Li = T(i + 1);
         for (int j = 0; j < Np; ++j) {
@@ -172,6 +174,7 @@ void Darcy<T, N>::build_pressure_pressure_block() {
 
 template<class T, int N>
 void Darcy<T, N>::build_pressure_phase_block() {
+#pragma omp parallel for
     for (int i = 0; i < Np; ++i) {
         Li = T(i + 1);
         for (int j = 0; j < N; ++j) {
@@ -186,10 +189,10 @@ void Darcy<T, N>::build_pressure_phase_block() {
                 return Li(x)*(phi_0.deriv(2, x)*eta(lj, ljd2, x) +
                               phi_0.deriv(1, x)*eta.deriv(lj, ljd, ljd3, x));
                                };
-            A2_C(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1, 1, 5, 1e-9);
+            A2_C(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
 
             auto g = [this](double x) { return Li(x)*Lj.deriv(x); };
-            A2_sgn(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(g, -1, 1, 5, 1e-9);
+            A2_sgn(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
         }
     }
 }
@@ -197,13 +200,14 @@ void Darcy<T, N>::build_pressure_phase_block() {
 
 template<class T, int N>
 void Darcy<T, N>::build_phase_pressure_block() {
+#pragma omp parallel for
     for (int i = 0; i < N; ++i) {
         Li = T(i + 1);
         for (int j = 0; j < Np; ++j) {
             Lj = T(j + 1);
 
             auto f = [this](double x) { return Li(x)*phi_0.deriv(1, x)*Lj.deriv(1, x); };
-            A3(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1, 1, 5, 1e-9);
+            A3(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
         }
     }
 }
@@ -211,6 +215,7 @@ void Darcy<T, N>::build_phase_pressure_block() {
 
 template<class T, int N>
 void Darcy<T, N>::build_phase_phase_block() {
+#pragma omp parallel for
     for (int i = 0; i < N; ++i) {
         Li = T(i + 1);
         for (int j = 0; j < N; ++j) {
@@ -223,18 +228,18 @@ void Darcy<T, N>::build_phase_phase_block() {
             auto ljd4 = std::bind([this](const double x) {return Lj.deriv(4, x); }, std::placeholders::_1);
 
             auto f = [this](double x) { return Li(x)*phi_0.deriv(1, x)*Lj(x); };
-            A4_sgn(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1, 1, 5, 1e-9);
+            A4_sgn(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
 
             auto g = [this, lj, ljd2](double x) {
                 return Li(x)*std::pow(phi_0.deriv(1, x), 2)*eta(lj, ljd2, x);
                 };
-            A4_C(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(g, -1, 1, 5, 1e-9);
+            A4_C(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
 
             auto gx = [this, lj, ljd2](double x) { return Li(x)*eta(lj, ljd2, x); };
-            A4_Pexx(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(gx, -1, 1, 5, 1e-9);
+            A4_Pexx(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(gx, -1., 1., 5, 1.e-9);
 
             auto h = [this, lj, ljd, ljd2, ljd4](double x) { return Li(x)*eta.deriv_yy(lj, ljd, ljd2, ljd4, x); };
-            A4_Peyy(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(g, -1, 1, 5, 1e-9);
+            A4_Peyy(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(h, -1., 1., 5, 1.e-9);
         }
     }
 }
@@ -242,22 +247,21 @@ void Darcy<T, N>::build_phase_phase_block() {
 
 template<class T, int N>
 void Darcy<T, N>::precompute_matrices() {
-    double tmp;
     // in this loop we fill B: B_ij = (Li, Lj)
-    for (int i=0; i < N; ++i) {
+    #pragma omp parallel for
+    for (int i = 0; i < N; ++i) {
         Li = T(i + 1);
-        for (int j = 0; j < N; ++j) {
-            if (j <= i) {
+        for (int j = 0; j <= i; ++j) {
                 Lj = T(j + 1);
 
                 auto f = [this](double x) { return Li(x)*Lj(x); };
-                tmp = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1, 1, 5, 1e-9);
-            } else {
-                tmp = B(j, i);
-            }
-            B(i, j) = tmp;
+                B(Np + i, Np + j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
         }
     }
+    for (int i=0; i < N; ++i)
+        for (int j = i + 1; j < N; ++j)
+            B(Np + i, Np + j) = B(Np + j, Np + i);
+
     build_pressure_pressure_block();
     build_pressure_phase_block();
     build_phase_pressure_block();
@@ -266,8 +270,9 @@ void Darcy<T, N>::precompute_matrices() {
 
 
 template<class T, int N>
-std::complex<double>& Darcy<T, N>::get_maximum_eigenvalue() {
-    return w(0);
+Eigen::Array<std::complex<double>, N + (N - 2), 1>& Darcy<T, N>::get_eigenvalues() {
+//std::complex<double>& Darcy<T, N>::get_maximum_eigenvalue() {
+    return w;
 }
 
 
