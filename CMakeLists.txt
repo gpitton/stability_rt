@@ -1,6 +1,8 @@
 project ("stability")
 cmake_minimum_required (VERSION 2.6)
 
+#set (CMAKE_CXX_FLAGS "-fopenmp -O3")
+set(CMAKE_CXX_FLAGS "-DEIGEN_STACK_ALLOCATION_LIMIT=0 -fopenmp -O3")
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(Spectra_INCLUDE_DIR /home/giuseppe/bin/Spectra-0.8.0)
 #set(Boost_USE_STATIC_LIBS OFF) 
