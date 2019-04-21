@@ -1,6 +1,6 @@
 #ifndef DARCY_HEADER
 #define DARCY_HEADER
-#include <iostream>
+#include <algorithm>
 #include <cmath>
 #include <complex>
 #include <functional>
@@ -40,6 +40,7 @@ class Darcy {
     inline void recompute_constants() { C = 3.*std::sqrt(2.)/4./Bo; };
     inline void set_biot(const double biot) { Bo = biot; };
     inline void set_peclet(const double peclet) { Pe = peclet; };
+    inline int count_negative_eigenvalues();
     Eigen::Array<std::complex<double>, N + (N - 2), 1>& get_eigenvalues();
     //std::complex<double>& get_maximum_eigenvalue();
  private:
@@ -58,7 +59,9 @@ class Darcy {
     static constexpr int Np = N - 2;    // number of pressure modes
     // choice of basis functions for the perturbation expansions
     // Li is understood to be the test function, Lj to be the trial function
-    T         Li, Lj;
+    // the following declaration is removed as the use of Li and Lj as member functions
+    // would make shared-memory parallelism very hard
+    // T         Li, Lj;
     // shape of phase field in the initial configuration
     Phi_0     phi_0;
     // chemical potential
@@ -80,7 +83,7 @@ class Darcy {
                                    M;
     SchurOperator<N, N> schur;
     // solver for the generalized eigenvalue problem
-    Eigen::GeneralizedEigenSolver<Eigen::Matrix<double, N + Np, N + Np>> ges;
+    Eigen::GeneralizedEigenSolver<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> ges;
     // solver for the Schur complement eigenvalue problem
     //Spectra::GenEigsSolver<double, Spectra::SMALLEST_REAL, SchurOperator<N, N>> ses;
 };
@@ -95,10 +98,10 @@ Darcy<T, N>::Darcy(double s,
                    double mode_k,
                    double mode_l)
     :
+    //Li(1),
+    //Lj(1),
     phi_0(std::sqrt(cahn)),
     eta(std::sqrt(cahn), mode_k, mode_l),
-    Li(1),
-    Lj(1),
     A(N + (N - 2), N + (N - 2)),
     B(N + (N - 2), N + (N - 2)),
     A1_M((N - 2), (N - 2)),
@@ -151,15 +154,15 @@ void Darcy<T, N>::build_pressure_pressure_block() {
     // pressure mass matrix: A1_M_{ij} = (Li, Lj)
     // this selects the sub-block of B of size <Np, Np>, starting at indices (Np-1, Np-1)
     A1_M = B.template block<Np, Np>(Np, Np);
-    //std::cout << A1_M << std::endl;
-    //std::cout << B << std::endl;
     #pragma omp parallel for
     for (int i = 0; i < Np; ++i) {
-        Li = T(i + 1);
+        //Li = T(i + 1);
+        T Li {i + 1};
         for (int j = 0; j < Np; ++j) {
-            Lj = T(j + 1);
+            //Lj = T(j + 1);
+            T Lj {j + 1};
 
-            auto f = [this](double x) { return Li(x)*Lj.deriv(2, x); };
+            auto f = [&Li, &Lj](const double x) { return Li(x)*Lj.deriv(2, x); };
             A1_D(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(
                            f,
                            -1.,    // integration interval limit, left
@@ -174,24 +177,24 @@ void Darcy<T, N>::build_pressure_pressure_block() {
 
 template<class T, int N>
 void Darcy<T, N>::build_pressure_phase_block() {
-#pragma omp parallel for
+    #pragma omp parallel for
     for (int i = 0; i < Np; ++i) {
-        Li = T(i + 1);
+        T Li {i + 1};
         for (int j = 0; j < N; ++j) {
-            Lj = T(j + 1);
+            T Lj {j + 1};
 
             auto lj   = std::bind(Lj, std::placeholders::_1);
-            auto ljd  = std::bind([this](const double x) {return Lj.deriv(1, x); }, std::placeholders::_1);
-            auto ljd2 = std::bind([this](const double x) {return Lj.deriv(2, x); }, std::placeholders::_1);
-            auto ljd3 = std::bind([this](const double x) {return Lj.deriv(3, x); }, std::placeholders::_1);
+            auto ljd  = std::bind([&Lj](const double x) {return Lj.deriv(1, x); }, std::placeholders::_1);
+            auto ljd2 = std::bind([&Lj](const double x) {return Lj.deriv(2, x); }, std::placeholders::_1);
+            auto ljd3 = std::bind([&Lj](const double x) {return Lj.deriv(3, x); }, std::placeholders::_1);
 
-            auto f = [this, lj, ljd, ljd2, ljd3](double x) {
+            auto f = [this, &Li, &lj, &ljd, &ljd2, &ljd3](const double x) {
                 return Li(x)*(phi_0.deriv(2, x)*eta(lj, ljd2, x) +
                               phi_0.deriv(1, x)*eta.deriv(lj, ljd, ljd3, x));
                                };
             A2_C(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
 
-            auto g = [this](double x) { return Li(x)*Lj.deriv(x); };
+            auto g = [&Li, &Lj](const double x) { return Li(x)*Lj.deriv(x); };
             A2_sgn(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
         }
     }
@@ -200,13 +203,13 @@ void Darcy<T, N>::build_pressure_phase_block() {
 
 template<class T, int N>
 void Darcy<T, N>::build_phase_pressure_block() {
-#pragma omp parallel for
+    #pragma omp parallel for
     for (int i = 0; i < N; ++i) {
-        Li = T(i + 1);
+        T Li {i + 1};
         for (int j = 0; j < Np; ++j) {
-            Lj = T(j + 1);
+            T Lj {j + 1};
 
-            auto f = [this](double x) { return Li(x)*phi_0.deriv(1, x)*Lj.deriv(1, x); };
+            auto f = [this, &Li, &Lj](const double x) { return Li(x)*phi_0.deriv(1, x)*Lj.deriv(1, x); };
             A3(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
         }
     }
@@ -215,30 +218,29 @@ void Darcy<T, N>::build_phase_pressure_block() {
 
 template<class T, int N>
 void Darcy<T, N>::build_phase_phase_block() {
-#pragma omp parallel for
+    #pragma omp parallel for
     for (int i = 0; i < N; ++i) {
-        Li = T(i + 1);
+        T Li {i + 1};
         for (int j = 0; j < N; ++j) {
-            Lj = T(j + 1);
+            T Lj {j + 1};
 
             auto lj = std::bind(Lj, std::placeholders::_1);
-            auto ljd  = std::bind([this](const double x) {return Lj.deriv(1, x); }, std::placeholders::_1);
-            auto ljd2 = std::bind([this](const double x) {return Lj.deriv(2, x); }, std::placeholders::_1);
-            auto ljd3 = std::bind([this](const double x) {return Lj.deriv(3, x); }, std::placeholders::_1);
-            auto ljd4 = std::bind([this](const double x) {return Lj.deriv(4, x); }, std::placeholders::_1);
+            auto ljd  = std::bind([&Lj](const double x) {return Lj.deriv(1, x); }, std::placeholders::_1);
+            auto ljd2 = std::bind([&Lj](const double x) {return Lj.deriv(2, x); }, std::placeholders::_1);
+            auto ljd4 = std::bind([&Lj](const double x) {return Lj.deriv(4, x); }, std::placeholders::_1);
 
-            auto f = [this](double x) { return Li(x)*phi_0.deriv(1, x)*Lj(x); };
+            auto f = [this, &Li, &Lj](const double x) { return Li(x)*phi_0.deriv(1, x)*Lj(x); };
             A4_sgn(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
 
-            auto g = [this, lj, ljd2](double x) {
+            auto g = [this, &Li, lj, ljd2](const double x) {
                 return Li(x)*std::pow(phi_0.deriv(1, x), 2)*eta(lj, ljd2, x);
                 };
             A4_C(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
 
-            auto gx = [this, lj, ljd2](double x) { return Li(x)*eta(lj, ljd2, x); };
+            auto gx = [this, &Li, lj, ljd2](const double x) { return Li(x)*eta(lj, ljd2, x); };
             A4_Pexx(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(gx, -1., 1., 5, 1.e-9);
 
-            auto h = [this, lj, ljd, ljd2, ljd4](double x) { return Li(x)*eta.deriv_yy(lj, ljd, ljd2, ljd4, x); };
+            auto h = [this, &Li, lj, ljd, ljd2, ljd4](const double x) { return Li(x)*eta.deriv_yy(lj, ljd, ljd2, ljd4, x); };
             A4_Peyy(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(h, -1., 1., 5, 1.e-9);
         }
     }
@@ -250,14 +252,16 @@ void Darcy<T, N>::precompute_matrices() {
     // in this loop we fill B: B_ij = (Li, Lj)
     #pragma omp parallel for
     for (int i = 0; i < N; ++i) {
-        Li = T(i + 1);
+        T Li {i + 1};
+        //int j;   // this needs to be declared here, not in the next loop or openmp would make j a shared variable
         for (int j = 0; j <= i; ++j) {
-                Lj = T(j + 1);
+            T Lj {j + 1};
 
-                auto f = [this](double x) { return Li(x)*Lj(x); };
-                B(Np + i, Np + j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
+            auto f = [&Li, &Lj](const double x) { return Li(x)*Lj(x); };
+            B(Np + i, Np + j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
         }
     }
+
     for (int i=0; i < N; ++i)
         for (int j = i + 1; j < N; ++j)
             B(Np + i, Np + j) = B(Np + j, Np + i);
@@ -273,6 +277,12 @@ template<class T, int N>
 Eigen::Array<std::complex<double>, N + (N - 2), 1>& Darcy<T, N>::get_eigenvalues() {
 //std::complex<double>& Darcy<T, N>::get_maximum_eigenvalue() {
     return w;
+}
+
+
+template<class T, int N>
+inline int Darcy<T, N>::count_negative_eigenvalues() {
+    return std::count_if(&w(0), &w(w.rows() - 1), [](const std::complex<double> x) {return (x.real() < 0.); });
 }
 
 
