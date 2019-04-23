@@ -184,9 +184,9 @@ void Darcy<T, N>::build_pressure_phase_block() {
             T Lj {j + 1};
 
             auto lj   = std::bind(Lj, std::placeholders::_1);
-            auto ljd  = std::bind([&Lj](const double x) {return Lj.deriv(1, x); }, std::placeholders::_1);
-            auto ljd2 = std::bind([&Lj](const double x) {return Lj.deriv(2, x); }, std::placeholders::_1);
-            auto ljd3 = std::bind([&Lj](const double x) {return Lj.deriv(3, x); }, std::placeholders::_1);
+            auto ljd  = std::bind([&Lj](const double x) { return Lj.deriv(1, x); }, std::placeholders::_1);
+            auto ljd2 = std::bind([&Lj](const double x) { return Lj.deriv(2, x); }, std::placeholders::_1);
+            auto ljd3 = std::bind([&Lj](const double x) { return Lj.deriv(3, x); }, std::placeholders::_1);
 
             auto f = [this, &Li, &lj, &ljd, &ljd2, &ljd3](const double x) {
                 return Li(x)*(phi_0.deriv(2, x)*eta(lj, ljd2, x) +
@@ -225,9 +225,9 @@ void Darcy<T, N>::build_phase_phase_block() {
             T Lj {j + 1};
 
             auto lj = std::bind(Lj, std::placeholders::_1);
-            auto ljd  = std::bind([&Lj](const double x) {return Lj.deriv(1, x); }, std::placeholders::_1);
-            auto ljd2 = std::bind([&Lj](const double x) {return Lj.deriv(2, x); }, std::placeholders::_1);
-            auto ljd4 = std::bind([&Lj](const double x) {return Lj.deriv(4, x); }, std::placeholders::_1);
+            auto ljd  = std::bind([&Lj](const double x) { return Lj.deriv(1, x); }, std::placeholders::_1);
+            auto ljd2 = std::bind([&Lj](const double x) { return Lj.deriv(2, x); }, std::placeholders::_1);
+            auto ljd4 = std::bind([&Lj](const double x) { return Lj.deriv(4, x); }, std::placeholders::_1);
 
             auto f = [this, &Li, &Lj](const double x) { return Li(x)*phi_0.deriv(1, x)*Lj(x); };
             A4_sgn(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
@@ -282,7 +282,7 @@ Eigen::Array<std::complex<double>, N + (N - 2), 1>& Darcy<T, N>::get_eigenvalues
 
 template<class T, int N>
 inline int Darcy<T, N>::count_negative_eigenvalues() {
-    return std::count_if(&w(0), &w(w.rows() - 1), [](const std::complex<double> x) {return (x.real() < 0.); });
+    return std::count_if(&w(0), &w(w.rows() - 1), [](const std::complex<double> x) { return (x.real() < 0.); });
 }
 
 

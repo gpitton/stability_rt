@@ -20,3 +20,4 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${Spectra_INCLUDE_DIR})
 
 add_executable(stability stability.cc)
+add_executable(two_parameters two_parameters.cc)

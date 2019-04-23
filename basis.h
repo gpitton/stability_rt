@@ -37,8 +37,8 @@ Trig3::Trig3(int num) {
     } else {
         n = (num + 1)/2;
         t = Odd;
-        an = 4.*num/(2.*num + 3.);
-        bn = num*(2.*num + 1.)/((num + 2.)*(2.*num + 3.));
+        an = 4.*n/(2.*n + 3.);
+        bn = n*(2.*n + 1.)/((n + 2.)*(2.*n + 3.));
     }
 }
 
