@@ -194,7 +194,7 @@ void Darcy<T, N>::build_pressure_phase_block() {
                                };
             A2_C(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
 
-            auto g = [&Li, &Lj](const double x) { return Li(x)*Lj.deriv(x); };
+            auto g = [&Li, &Lj](const double x) { return Li(x)*Lj.deriv(1, x); };
             A2_sgn(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
         }
     }

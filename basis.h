@@ -52,7 +52,7 @@ double Trig3::operator()(const double x) {
 }
 
 
-double Trig3::deriv(int m=1, const double x=0.) {
+double Trig3::deriv(int m, const double x) {
     if (t == Even) {
         switch (m) {
         case 1:

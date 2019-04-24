@@ -50,7 +50,7 @@ inline double Phi_0::operator()(const double x) {
 }
 
 // derivatives of the phase field in the initial configuration
-double Phi_0::deriv(int m=1, const double x=0.) {
+double Phi_0::deriv(int m, const double x) {
     if (m == 2)
         return -std::tanh(x/std::sqrt(2.)/eps)/std::pow(eps*std::cosh(x/std::sqrt(2.)/eps), 2);
     return 1./(std::sqrt(2.)*eps*std::pow(std::cosh(x/std::sqrt(2.)/eps), 2));
@@ -87,7 +87,7 @@ double Eta::deriv(std::function<double (const double)> f,
                   std::function<double (const double)> fd3,
                   const double x) {
     double p  = phi_0(x);
-    double py = phi_0.deriv(x);
+    double py = phi_0.deriv(1, x);
     return 6*p*py*f(x) + 3*std::pow(p, 2)*fd(x) - (1. - std::pow(eps*k, 2) - std::pow(eps*l, 2))*fd(x) - std::pow(eps, 2)*fd3(x);
 }
 
@@ -111,9 +111,9 @@ double Eta::deriv_yy(std::function<double (const double)> f,
                      std::function<double (const double)> fd4,
                      const double x) {
     double p   = phi_0(x);
-    double py  = phi_0.deriv(x);
+    double py  = phi_0.deriv(1, x);
     double pyy = phi_0.deriv(2, x);
-    return 6*(std::pow(py, 2) + p*pyy)*f(x) + 6*p*py*fd(x) + (3*std::pow(p, 2) - 1.)*fd2(x) - std::pow(eps, 2)*(- std::pow(k, 2) - std::pow(l, 2)) + fd4(x);
+    return 6*(std::pow(py, 2) + p*pyy)*f(x) + 6*p*py*fd(x) + (3*std::pow(p, 2) - 1.)*fd2(x) - std::pow(eps, 2)*(-(std::pow(k, 2) + std::pow(l, 2))*fd2(x) + fd4(x));
 }
 
 #endif
