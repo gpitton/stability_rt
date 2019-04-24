@@ -4,6 +4,7 @@
 #include <cmath>
 #include <complex>
 #include <functional>
+#include <iostream>
 #include <boost/math/quadrature/gauss_kronrod.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
@@ -24,6 +25,7 @@ class Darcy {
     inline void set_biot(const double biot) { Bo = biot; };
     inline void set_peclet(const double peclet) { Pe = peclet; };
     inline int count_negative_eigenvalues();
+    inline int count_positive_eigenvalues();
     Eigen::Array<std::complex<double>, N + (N - 2), 1>& get_eigenvalues();
     //std::complex<double>& get_maximum_eigenvalue();
  private:
@@ -253,19 +255,25 @@ void Darcy<T, N>::precompute_matrices() {
     build_pressure_phase_block();
     build_phase_pressure_block();
     build_phase_phase_block();
+    std::cout << "matrix block computation complete." << std::endl;
 }
 
 
 template<class T, int N>
 Eigen::Array<std::complex<double>, N + (N - 2), 1>& Darcy<T, N>::get_eigenvalues() {
-//std::complex<double>& Darcy<T, N>::get_maximum_eigenvalue() {
     return w;
 }
 
 
 template<class T, int N>
-inline int Darcy<T, N>::count_negative_eigenvalues() {
+    inline int Darcy<T, N>::count_negative_eigenvalues() {
     return std::count_if(&w(0), &w(w.rows() - 1), [](const std::complex<double> x) { return (x.real() < 0.); });
+}
+
+
+template<class T, int N>
+inline int Darcy<T, N>::count_positive_eigenvalues() {
+    return std::count_if(&w(0), &w(w.rows() - 1), [](const std::complex<double> x) { return (x.real() > 0.); });
 }
 
 

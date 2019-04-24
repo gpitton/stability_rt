@@ -35,7 +35,7 @@ void output_stability_data(const T1& p1, const T1& p2, const T2& data, std::stri
 
 int main() {
     const int N = 64;
-    std::string cahn = "0.01";
+    std::string cahn = "0.1";
     double Ch = std::stod(cahn);
     int k = 1;
 
@@ -62,7 +62,7 @@ int main() {
             stability_problem.recompute_constants();
             stability_problem.assemble_matrix();
             stability_problem.solve_eigenproblem();
-            res[i*n_bo + j] = stability_problem.count_negative_eigenvalues();
+            res[i*n_bo + j] = N - stability_problem.count_negative_eigenvalues();
        }
     }
 
