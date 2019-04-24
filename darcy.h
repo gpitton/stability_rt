@@ -12,23 +12,6 @@
 #include "utils.h"
 
 
-template<int R, int C>
-class SchurOperator
-{
- public:
-    int rows() { return R; }
-    int cols() { return C; }
-    // y_out = M * x_in
-    void perform_op(const double *x_in, double *y_out)
-    {
-        for(int i = 0; i < rows(); ++i)
-            {
-                y_out[i] = x_in[i] * (i + 1);
-            }
-    }
-};
-
-
 // template parameters: basis function type, number of expansion modes
 template<class T, int N>
 class Darcy {
@@ -81,7 +64,7 @@ class Darcy {
                                    A4_Pexx,
                                    A4_Peyy,
                                    M;
-    SchurOperator<N, N> schur;
+    //SchurOperator<N, N> schur;
     // solver for the generalized eigenvalue problem
     Eigen::GeneralizedEigenSolver<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> ges;
     // solver for the Schur complement eigenvalue problem
