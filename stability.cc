@@ -9,7 +9,7 @@ int main() {
     stability_problem.precompute_matrices();
     stability_problem.assemble_matrix();
     stability_problem.solve_eigenproblem();
-    std::cout << "negative eigenvalues:" << stability_problem.count_negative_eigenvalues() << std::endl;
+    std::cout << "positive eigenvalues:" << stability_problem.count_positive_eigenvalues() << std::endl;
 
     /*
     Darcy<Trig3, 2*N>     st(1., 10., 1e3, 0.1, 1.);

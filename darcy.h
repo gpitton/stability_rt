@@ -13,6 +13,9 @@
 #include "utils.h"
 
 
+typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> EigenDynamic;
+
+
 // template parameters: basis function type, number of expansion modes
 template<class T, int N>
 class Darcy {
@@ -54,21 +57,21 @@ class Darcy {
     // vector to store the eigenvalues
     Eigen::Array<std::complex<double>, N + Np, 1>   w;
     // A and B are respectively the lhs and the rhs for the generalized eigenvalue problem
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A, B;
+    EigenDynamic A, B;
     // parameter-dependent blocks of A, which are computed independently to speed-up families of parameter-dependent computations
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>  A1_M,
-                                   A1_D;
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>   A2_sgn,
-                                   A2_C;
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>   A3;
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>    A4_sgn,
-                                   A4_C,
-                                   A4_Pexx,
-                                   A4_Peyy,
-                                   M;
+    EigenDynamic A1_M,
+                 A1_D,
+                 A2_sgn,
+                 A2_C,
+                 A3,
+                 A4_sgn,
+                 A4_C,
+                 A4_Pexx,
+                 A4_Peyy,
+                 M;
     //SchurOperator<N, N> schur;
     // solver for the generalized eigenvalue problem
-    Eigen::GeneralizedEigenSolver<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> ges;
+    Eigen::GeneralizedEigenSolver<EigenDynamic> ges;
     // solver for the Schur complement eigenvalue problem
     //Spectra::GenEigsSolver<double, Spectra::SMALLEST_REAL, SchurOperator<N, N>> ses;
     //template<int M> friend class Trig3Darcy;
@@ -110,7 +113,7 @@ Darcy<T, N>::Darcy(double s,
     eps = std::sqrt(Ch);
 
     // initialize B to zero
-    B = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Zero(N + Np, N + Np);
+    B = EigenDynamic::Zero(N + Np, N + Np);
 }
 
 
@@ -279,8 +282,6 @@ inline int Darcy<T, N>::count_positive_eigenvalues() {
 
 // specialization for Trig3 basis functions
 // this allows to skip a few computations, which we know are going to return zero
-//see: https://stackoverflow.com/questions/36079774/invalid-use-of-incomplete-type-class-method-specialization
-// https://stackoverflow.com/questions/30816813/invalid-use-of-incomplete-type-for-partial-template-specialization-c
 template<int N>
 class Trig3Darcy : public Darcy<Trig3, N> {
  public:
@@ -306,15 +307,15 @@ Trig3Darcy<N>::Trig3Darcy(double s,
 Darcy<Trig3, N>::Darcy(s, biot, peclet, cahn, mode_k, mode_l)
 {
     // initialize to zero a bunch of matrices
-    Trig3Darcy::A1_M = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Zero(Np, Np);
-    Trig3Darcy::A1_D = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Zero(Np, Np);
-    Trig3Darcy::A2_sgn = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Zero(Np, N);
-    Trig3Darcy::A2_C = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Zero(Np, N);
-    Trig3Darcy::A3 = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Zero(N, Np);
-    Trig3Darcy::A4_sgn = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Zero(N, N);
-    Trig3Darcy::A4_C = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Zero(N, N);
-    Trig3Darcy::A4_Pexx = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Zero(N, N);
-    Trig3Darcy::A4_Peyy = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Zero(N, N);
+    Trig3Darcy::A1_M    = EigenDynamic::Zero(Np, Np);
+    Trig3Darcy::A1_D    = EigenDynamic::Zero(Np, Np);
+    Trig3Darcy::A2_sgn  = EigenDynamic::Zero(Np, N);
+    Trig3Darcy::A2_C    = EigenDynamic::Zero(Np, N);
+    Trig3Darcy::A3      = EigenDynamic::Zero(N, Np);
+    Trig3Darcy::A4_sgn  = EigenDynamic::Zero(N, N);
+    Trig3Darcy::A4_C    = EigenDynamic::Zero(N, N);
+    Trig3Darcy::A4_Pexx = EigenDynamic::Zero(N, N);
+    Trig3Darcy::A4_Peyy = EigenDynamic::Zero(N, N);
 }
 
 
