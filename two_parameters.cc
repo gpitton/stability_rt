@@ -1,36 +1,9 @@
 #include <algorithm>
 #include <cmath>
-#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
 #include "darcy.h"
-
-
-template<typename T>
-std::vector<T> linspace(T a, T b, int n) {
-    std::vector<T> dst(n);
-    T h = (b - a)/static_cast<T> (n - 1);
-    for (int i = 0; i < n; ++i)
-        dst[i] = a + h*i;
-    return dst;
-}
-
-
-// p1, p2 stand for "parameter 1" and "parameter 2"
-// data contains the stability data parametrized by p1 and p2
-template<typename T1, typename T2>
-void output_stability_data(const T1& p1, const T1& p2, const T2& data, std::string fname) {
-    std::ofstream output_file(fname);
-    std::ostream_iterator<double> output_iterator(output_file, "\n");
-    // first line contains the lengths of p1, p2, and data
-    output_file << std::to_string(p1.size()) << " " << std::to_string(p2.size()) << " " << std::to_string(data.size()) << "\n";
-    std::copy(p1.begin(), p1.end(), output_iterator);
-    std::copy(p2.begin(), p2.end(), output_iterator);
-    std::copy(data.begin(), data.end(), output_iterator);
-    output_file.close();
-    std::cout << "\n" << "written file " << fname << std::endl;
-}
 
 
 int main() {
@@ -52,7 +25,8 @@ int main() {
     std::vector<int> res (n_bo*n_pe);
 
 
-    Darcy<Trig3, N>     stability_problem(-1., Bo[0], Pe[0], Ch, k);
+    //Darcy<Trig3, N>     stability_problem(-1., Bo[0], Pe[0], Ch, k);
+    Trig3Darcy<N>     stability_problem(-1., Bo[0], Pe[0], Ch, k);
     stability_problem.precompute_matrices();
 
     for (int i = 0; i < Pe.size(); ++i) {
@@ -62,7 +36,7 @@ int main() {
             stability_problem.recompute_constants();
             stability_problem.assemble_matrix();
             stability_problem.solve_eigenproblem();
-            res[i*n_bo + j] = N - stability_problem.count_negative_eigenvalues();
+            res[i*n_bo + j] = stability_problem.count_positive_eigenvalues();
        }
     }
 
