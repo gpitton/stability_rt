@@ -12,6 +12,18 @@ The parameters considered in this software are:
 - sign of the phase field: +1 if the light fluid is on top of the heavy fluid, -1 if the light fluid is at the bottom of the heavy fluid.
 - components of the perturbation's wave vector (k, l) in the direction orthogonal to gravity. Set l=0 for a two-dimensional perturbation.
 
+# Usage
+
+After cloning the repository, do:
+
+```
+cd stability_ry
+mkdir build
+cd build
+cmake ..
+make
+```
+
 
 # References
 
