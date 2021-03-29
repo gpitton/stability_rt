@@ -16,6 +16,8 @@ int main() {
     int n_bo = 100,
         n_pe = 100;
 
+    // We distribute the parameters's range equally
+    // on a log scale.
     auto ebo = linspace<double>(-1., 2., n_bo);
     auto Bo (ebo);
     std::transform(ebo.begin(), ebo.end(), Bo.begin(), [](double x) { return std::pow(10., x); });

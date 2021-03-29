@@ -6,13 +6,13 @@
 constexpr double pi = 3.141592653589793238463;
 
 
-enum parity { Even, Odd };
+enum class parity { Even, Odd };
 
 
 class BasisFunction {
  public:
-    virtual double operator()(const double) = 0;
-    virtual double deriv(int, const double) = 0;
+    double operator()(const double);
+    double deriv(int, const double);
 };
 
 
@@ -33,10 +33,10 @@ class Trig3 : public BasisFunction {
 Trig3::Trig3(int num) {
     if (num % 2 == 0) {
         n = num/2;
-        t = Even;
+        t = parity::Even;
     } else {
         n = (num + 1)/2;
-        t = Odd;
+        t = parity::Odd;
         an = 4.*n/(2.*n + 3.);
         bn = n*(2.*n + 1.)/((n + 2.)*(2.*n + 3.));
     }
@@ -44,7 +44,7 @@ Trig3::Trig3(int num) {
 
 
 double Trig3::operator()(const double x) {
-    if (t == Even) {
+    if (t == parity::Even) {
         return std::cos(n*pi*x);
     } else {
         return std::sin(n*pi*x) + an*std::sin((n + 1)*pi*x) + bn*std::sin((n + 2)*pi*x);
@@ -53,7 +53,7 @@ double Trig3::operator()(const double x) {
 
 
 double Trig3::deriv(int m, const double x) {
-    if (t == Even) {
+    if (t == parity::Even) {
         switch (m) {
         case 1:
             return -n*pi*std::sin(n*pi*x);

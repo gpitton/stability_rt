@@ -8,12 +8,12 @@
 #include <boost/math/quadrature/gauss_kronrod.hpp>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
-//#include <Spectra/GenEigsSolver.h>
 #include "basis.h"
 #include "utils.h"
 
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> EigenDynamic;
+namespace quad = boost::math::quadrature;
 
 
 // template parameters: basis function type, number of expansion modes
@@ -152,7 +152,7 @@ void Darcy<T, N>::build_pressure_pressure_block() {
             T Lj {j + 1};
 
             auto f = [&Li, &Lj](const double x) { return Li(x)*Lj.deriv(2, x); };
-            A1_D(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(
+            A1_D(i, j) = quad::gauss_kronrod<double, 15>::integrate(
                            f,
                            -1.,    // integration interval limit, left
                            1.,     // integration interval limit, right
@@ -181,10 +181,10 @@ void Darcy<T, N>::build_pressure_phase_block() {
                 return Li(x)*(phi_0.deriv(2, x)*eta(lj, ljd2, x) +
                               phi_0.deriv(1, x)*eta.deriv(lj, ljd, ljd3, x));
                                };
-            A2_C(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
+            A2_C(i, j) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
 
             auto g = [&Li, &Lj](const double x) { return Li(x)*Lj.deriv(1, x); };
-            A2_sgn(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
+            A2_sgn(i, j) = quad::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
         }
     }
 }
@@ -199,7 +199,7 @@ void Darcy<T, N>::build_phase_pressure_block() {
             T Lj {j + 1};
 
             auto f = [this, &Li, &Lj](const double x) { return Li(x)*phi_0.deriv(1, x)*Lj.deriv(1, x); };
-            A3(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
+            A3(i, j) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
         }
     }
 }
@@ -219,18 +219,18 @@ void Darcy<T, N>::build_phase_phase_block() {
             auto ljd4 = std::bind([&Lj](const double x) { return Lj.deriv(4, x); }, std::placeholders::_1);
 
             auto f = [this, &Li, &Lj](const double x) { return Li(x)*phi_0.deriv(1, x)*Lj(x); };
-            A4_sgn(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
+            A4_sgn(i, j) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
 
             auto g = [this, &Li, lj, ljd2](const double x) {
                 return Li(x)*std::pow(phi_0.deriv(1, x), 2)*eta(lj, ljd2, x);
                 };
-            A4_C(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
+            A4_C(i, j) = quad::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
 
             auto gx = [this, &Li, lj, ljd2](const double x) { return Li(x)*eta(lj, ljd2, x); };
-            A4_Pexx(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(gx, -1., 1., 5, 1.e-9);
+            A4_Pexx(i, j) = quad::gauss_kronrod<double, 15>::integrate(gx, -1., 1., 5, 1.e-9);
 
             auto h = [this, &Li, lj, ljd, ljd2, ljd4](const double x) { return Li(x)*eta.deriv_yy(lj, ljd, ljd2, ljd4, x); };
-            A4_Peyy(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(h, -1., 1., 5, 1.e-9);
+            A4_Peyy(i, j) = quad::gauss_kronrod<double, 15>::integrate(h, -1., 1., 5, 1.e-9);
         }
     }
 }
@@ -246,7 +246,7 @@ void Darcy<T, N>::precompute_matrices() {
             T Lj {j + 1};
 
             auto f = [&Li, &Lj](const double x) { return Li(x)*Lj(x); };
-            B(Np + i, Np + j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
+            B(Np + i, Np + j) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
         }
     }
 
@@ -329,7 +329,7 @@ void Trig3Darcy<N>::precompute_matrices() {
         Trig3 Li {i + 1};
 
         auto f = [&Li](const double x) { return std::pow(Li(x), 2); };
-        Trig3Darcy::B(Np + i, Np + i) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
+        Trig3Darcy::B(Np + i, Np + i) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
     }
     // first outer diagonal
     #pragma omp parallel for
@@ -338,7 +338,7 @@ void Trig3Darcy<N>::precompute_matrices() {
         Trig3 Lj {i + 3};
 
         auto f = [&Li, &Lj](const double x) { return Li(x)*Lj(x); };
-        Trig3Darcy::B(Np + i, Np + i + 2) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
+        Trig3Darcy::B(Np + i, Np + i + 2) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
     }
     // second outer diagonal
     #pragma omp parallel for
@@ -347,7 +347,7 @@ void Trig3Darcy<N>::precompute_matrices() {
         Trig3 Lj {i + 5};
 
         auto f = [&Li, &Lj](const double x) { return Li(x)*Lj(x); };
-        Trig3Darcy::B(Np + i, Np + i + 4) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
+        Trig3Darcy::B(Np + i, Np + i + 4) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
     }
 
     for (int i=0; i < N; ++i)
@@ -372,7 +372,7 @@ void Trig3Darcy<N>::build_pressure_pressure_block() {
         Trig3 Li {i + 1};
 
         auto f = [&Li](const double x) { return Li(x)*Li.deriv(2, x); };
-        Trig3Darcy::A1_D(i, i) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1e-9);
+        Trig3Darcy::A1_D(i, i) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1e-9);
         }
     // first outer diagonal
     #pragma omp parallel for
@@ -381,7 +381,7 @@ void Trig3Darcy<N>::build_pressure_pressure_block() {
         Trig3 Lj {i + 3};
 
         auto f = [&Li, &Lj](const double x) { return Li(x)*Lj.deriv(2, x); };
-        Trig3Darcy::A1_D(i, i + 2) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1e-9);
+        Trig3Darcy::A1_D(i, i + 2) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1e-9);
     }
     // second outer diagonal
     #pragma omp parallel for
@@ -390,7 +390,7 @@ void Trig3Darcy<N>::build_pressure_pressure_block() {
         Trig3 Lj {i + 5};
 
         auto f = [&Li, &Lj](const double x) { return Li(x)*Lj.deriv(2, x); };
-        Trig3Darcy::A1_D(i, i + 4) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1e-9);
+        Trig3Darcy::A1_D(i, i + 4) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1e-9);
     }
 
     for (int i = 0; i < Np; ++i)
@@ -422,14 +422,14 @@ void Trig3Darcy<N>::build_pressure_phase_block() {
                 return Li(x)*(Trig3Darcy::phi_0.deriv(2, x)*Trig3Darcy::eta(lj, ljd2, x) +
                               Trig3Darcy::phi_0.deriv(1, x)*Trig3Darcy::eta.deriv(lj, ljd, ljd3, x));
                                };
-            Trig3Darcy::A2_C(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
+            Trig3Darcy::A2_C(i, j) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
 
             // exploit the antisymmetry of A2_sgn
             if (j < i)
                 continue;
 
             auto g = [&Li, &Lj](const double x) { return Li(x)*Lj.deriv(1, x); };
-            Trig3Darcy::A2_sgn(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
+            Trig3Darcy::A2_sgn(i, j) = quad::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
         }
     }
 
@@ -452,7 +452,7 @@ void Trig3Darcy<N>::build_phase_pressure_block() {
             Trig3 Lj {j + 1};
 
             auto f = [this, &Li, &Lj](const double x) { return Li(x)*Trig3Darcy::phi_0.deriv(1, x)*Lj.deriv(1, x); };
-            Trig3Darcy::A3(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
+            Trig3Darcy::A3(i, j) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
         }
     }
 }
@@ -479,19 +479,19 @@ void Trig3Darcy<N>::build_phase_phase_block() {
             auto g = [this, &Li, lj, ljd2](const double x) {
                 return Li(x)*std::pow(Trig3Darcy::phi_0.deriv(1, x), 2)*Trig3Darcy::eta(lj, ljd2, x);
             };
-            Trig3Darcy::A4_C(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
+            Trig3Darcy::A4_C(i, j) = quad::gauss_kronrod<double, 15>::integrate(g, -1., 1., 5, 1.e-9);
 
             if (j > i)
                 continue;
 
             auto f = [this, &Li, &Lj](const double x) { return Li(x)*Trig3Darcy::phi_0.deriv(1, x)*Lj(x); };
-            Trig3Darcy::A4_sgn(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
+            Trig3Darcy::A4_sgn(i, j) = quad::gauss_kronrod<double, 15>::integrate(f, -1., 1., 5, 1.e-9);
 
             auto gx = [this, &Li, lj, ljd2](const double x) { return Li(x)*Trig3Darcy::eta(lj, ljd2, x); };
-            Trig3Darcy::A4_Pexx(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(gx, -1., 1., 5, 1.e-9);
+            Trig3Darcy::A4_Pexx(i, j) = quad::gauss_kronrod<double, 15>::integrate(gx, -1., 1., 5, 1.e-9);
 
             auto h = [this, &Li, lj, ljd, ljd2, ljd4](const double x) { return Li(x)*Trig3Darcy::eta.deriv_yy(lj, ljd, ljd2, ljd4, x); };
-            Trig3Darcy::A4_Peyy(i, j) = boost::math::quadrature::gauss_kronrod<double, 15>::integrate(h, -1., 1., 5, 1.e-9);
+            Trig3Darcy::A4_Peyy(i, j) = quad::gauss_kronrod<double, 15>::integrate(h, -1., 1., 5, 1.e-9);
         }
     }
 
