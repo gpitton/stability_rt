@@ -14,15 +14,26 @@ The parameters considered in this software are:
 
 # Usage
 
-After cloning the repository, do:
+After cloning the repository, make sure to set the environment variables specifying the locations of boost and Eigen libraries if required.
+For example,
+```
+export BOOST_INCLUDE_DIR=/usr/include/boost
+export EIGEN3_INCLUDE_DIR=/usr/include/eigen3
+```
+You can also set the include directories directly in the Makefile.
 
+
+Then, you can build the executables as follows:
 ```
 cd stability_ry
-mkdir build
-cd build
-cmake ..
 make
 ```
+
+# Example
+Stability map built with `two_parameters.cc`.
+The contours lines are iso-Cahn number curves.
+
+![Stability Map](stabmap_2d.png)
 
 
 # References
@@ -30,3 +41,4 @@ make
 For a description of the model, see:
 
 - M. De Paoli: *Convection in porous media*, PhD Thesis, Università di Udine, 2017
+
